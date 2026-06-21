@@ -1,0 +1,61 @@
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+MANIFEST
+
+# ─── Virtual environments ─────────────────────────────────────────────────────
+.env
+venv/
+env/
+ENV/
+.venv/
+.ENV/
+pyvenv.cfg
+
+# ─── IDE / editor ────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ─── Testing ─────────────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+test_soar.db
+
+# ─── Database ────────────────────────────────────────────────────────────────
+*.db
+*.sqlite3
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ─── Security – NEVER commit secrets ─────────────────────────────────────────
+.env
+*.pem
+*.key
+*.cert
+*.p12
+
+# ─── Alembic (migration artefacts) ───────────────────────────────────────────
+alembic/versions/*.pyc
