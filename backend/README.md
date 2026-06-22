@@ -1,224 +1,298 @@
-# 🛡️ SOAR Incident Containment Engine
+# SOAR Incident Containment Engine
 
-> **Security Orchestration, Automation, and Response (SOAR) platform**  
-> Built during the Infotact Internship Program · Day 1 Foundation
-
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?logo=fastapi)](https://fastapi.tiangolo.com)
-[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python)](https://python.org)
-[![SQLite](https://img.shields.io/badge/Database-SQLite%20%2F%20PostgreSQL-003B57?logo=sqlite)](https://sqlite.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+> **Security Orchestration, Automation, and Response (SOAR) Platform**
+> Internship Project — Infotact | Day 2: Alert Workflow Validation & Risk Scoring
 
 ---
 
-## 📌 Project Overview
+## Project Overview
 
-The **SOAR Incident Containment Engine** is a backend platform designed to ingest, triage, enrich, and automatically respond to security incidents. It serves as the nerve centre of a SOC (Security Operations Centre), replacing manual analyst workflows with intelligent automation.
-
----
-
-## 🔥 Problem Statement
-
-Modern organisations face hundreds to thousands of security alerts per day. Security analysts suffer from **alert fatigue** — they are overwhelmed by volume, miss critical incidents buried in noise, and spend valuable time on repetitive triage tasks.
-
-**SOAR platforms solve this by:**
-- Centralising alert ingestion from disparate sources (SIEM, EDR, firewall, IDS).
-- Automatically enriching alerts with threat intelligence (VirusTotal, AbuseIPDB, Shodan).
-- Calculating dynamic risk scores to prioritise analyst attention.
-- Executing automated response playbooks (isolate host, block IP, revoke credentials).
-- Reducing Mean Time To Respond (MTTR) from hours to minutes.
+A production-grade FastAPI backend for ingesting, enriching, scoring, and triaging security incidents. The engine automates the first-response workflow by validating incoming alerts, running threat intelligence enrichment (mock), computing risk scores, and maintaining a full audit trail.
 
 ---
 
-## ✨ Features (Day 1 – Foundation)
+## Technology Stack
 
-| Feature | Status |
-|---|---|
-| FastAPI backend with interactive docs | ✅ |
-| SQLite database via SQLAlchemy ORM | ✅ |
-| Alert ingestion (`POST /alerts`) | ✅ |
-| Alert retrieval with filters (`GET /alerts`) | ✅ |
-| Pydantic v2 validation (IP, severity, status) | ✅ |
-| Modular clean architecture | ✅ |
-| Health check endpoint | ✅ |
-| Sample seed data (10 realistic alerts) | ✅ |
-| Pytest test suite | ✅ |
+| Layer         | Technology                          |
+|---------------|-------------------------------------|
+| Framework     | FastAPI 0.111                       |
+| ORM           | SQLAlchemy 2.0                      |
+| Database      | SQLite (development) / PostgreSQL   |
+| Validation    | Pydantic v2                         |
+| Server        | Uvicorn                             |
+| Testing       | Pytest + FastAPI TestClient         |
 
 ---
 
-## 🏗️ Architecture
+## Project Structure
 
 ```
 backend/
 ├── app/
+│   ├── main.py                    # FastAPI app factory & lifespan
 │   ├── database/
-│   │   ├── __init__.py
-│   │   └── db.py             # SQLAlchemy engine, session, Base
+│   │   └── db.py                  # SQLAlchemy engine + session + Base
 │   ├── models/
-│   │   ├── __init__.py
-│   │   ├── alert.py          # ORM model (Alert table)
-│   │   └── schemas.py        # Pydantic request/response schemas
+│   │   ├── alert.py               # Alert ORM model (SeverityLevel, AlertStatus enums)
+│   │   └── schemas.py             # Pydantic request/response schemas
 │   ├── routes/
-│   │   ├── __init__.py
-│   │   └── alerts.py         # HTTP route handlers
+│   │   └── alerts.py              # HTTP route handlers
 │   ├── services/
-│   │   ├── __init__.py
-│   │   └── alert_service.py  # Business logic layer
-│   ├── utils/
-│   │   ├── __init__.py
-│   │   └── helpers.py        # Shared utilities (logger, etc.)
-│   └── main.py               # FastAPI app factory + startup
+│   │   ├── alert_service.py       # Business logic (CRUD + orchestration)
+│   │   ├── risk_scoring.py        # Risk score calculation engine
+│   │   └── threat_intelligence.py # Mock AbuseIPDB & VirusTotal lookups
+│   └── utils/
+│       └── helpers.py             # Shared logger factory
 ├── tests/
-│   ├── __init__.py
-│   ├── seed_data.py          # Sample alert seed script
-│   └── test_alerts.py        # Pytest test suite
-├── docs/                     # API documentation & diagrams
-├── screenshots/              # UI / Swagger screenshots
-├── .env.example              # Environment variable template
-├── .gitignore
+│   ├── seed_data.py               # Sample alert seeder script
+│   └── test_alerts.py             # Pytest unit tests
 ├── requirements.txt
 └── README.md
 ```
 
 ---
 
-## 🛠️ Tech Stack
+## Database Schema
 
-| Layer | Technology |
-|---|---|
-| **Framework** | FastAPI 0.111 |
-| **Language** | Python 3.11+ |
-| **ORM** | SQLAlchemy 2.0 |
-| **Database** | SQLite (dev) / PostgreSQL (prod) |
-| **Validation** | Pydantic v2 |
-| **Server** | Uvicorn (ASGI) |
-| **Testing** | Pytest + FastAPI TestClient |
-| **Migration** | Alembic (Day 2+) |
+### Table: `alerts`
+
+| Column       | Type         | Constraints                          | Description                              |
+|--------------|--------------|--------------------------------------|------------------------------------------|
+| id           | INTEGER      | PRIMARY KEY, AUTOINCREMENT           | Auto-incrementing integer ID             |
+| alert_id     | VARCHAR(50)  | UNIQUE, NOT NULL, INDEX              | Human-readable ID (e.g. `ALERT-A3F80001`)|
+| alert_type   | VARCHAR(100) | NOT NULL, INDEX                      | Category (Brute Force, Port Scan, etc.)  |
+| source_ip    | VARCHAR(45)  | NOT NULL                             | IPv4 address that triggered the alert    |
+| severity     | ENUM         | NOT NULL, DEFAULT Medium             | Low \| Medium \| High \| Critical        |
+| status       | ENUM         | NOT NULL, DEFAULT Open               | Open \| Investigating \| Resolved        |
+| description  | VARCHAR(500) | NULLABLE                             | Optional free-text context               |
+| risk_score   | FLOAT        | NOT NULL, DEFAULT 0.0                | Computed risk score (0-100)              |
+| created_at   | DATETIME     | NOT NULL                             | UTC creation timestamp                   |
+| updated_at   | DATETIME     | NOT NULL                             | UTC last-modified timestamp              |
 
 ---
 
-## 🚀 Installation Guide
+## API Endpoints
 
-### Prerequisites
+### Base URL: `http://localhost:8000`
 
-- Python 3.11 or higher
-- pip
+| Method  | Endpoint                        | Description                                        |
+|---------|---------------------------------|----------------------------------------------------|
+| GET     | `/`                             | Health check                                       |
+| POST    | `/alerts/`                      | Create a new security alert                        |
+| GET     | `/alerts/`                      | List alerts (filter by severity/status, paginate)  |
+| GET     | `/alerts/{id}`                  | Retrieve a single alert by integer ID              |
+| PATCH   | `/alerts/{id}/status`           | Update alert workflow status                       |
+| GET     | `/alerts/{id}/enrich`           | Get TI enrichment for an alert's IP               |
 
-### 1. Clone the repository
+### Interactive API Docs: `http://localhost:8000/docs`
 
-```bash
-git clone https://github.com/your-username/soar-incident-containment-engine.git
-cd "SOAR Incident Containment Engine/backend"
+---
+
+### POST `/alerts/`
+
+**Request Body:**
+```json
+{
+  "alert_type":  "Brute Force",
+  "source_ip":   "203.0.113.42",
+  "severity":    "High",
+  "description": "348 failed SSH logins in 60 seconds.",
+  "status":      "Open"
+}
 ```
 
-### 2. Create and activate a virtual environment
-
-```bash
-# Windows
-python -m venv venv
-venv\Scripts\activate
-
-# macOS / Linux
-python -m venv venv
-source venv/bin/activate
+**Response (201 Created):**
+```json
+{
+  "id":          1,
+  "alert_id":    "ALERT-A3F80001",
+  "alert_type":  "Brute Force",
+  "source_ip":   "203.0.113.42",
+  "severity":    "High",
+  "status":      "Open",
+  "description": "348 failed SSH logins in 60 seconds.",
+  "risk_score":  72.5,
+  "created_at":  "2026-06-22T12:00:00Z",
+  "updated_at":  "2026-06-22T12:00:00Z"
+}
 ```
 
-### 3. Install dependencies
+### PATCH `/alerts/{id}/status`
 
-```bash
-pip install -r requirements.txt
+**Request Body:**
+```json
+{ "status": "Investigating" }
+```
+Allowed values: `Open` | `Investigating` | `Resolved`
+
+### GET `/alerts/{id}/enrich`
+
+**Response:**
+```json
+{
+  "alert_id": "ALERT-A3F80001",
+  "source_ip": "203.0.113.42",
+  "risk_info": {
+    "risk_score": 72.5,
+    "risk_level": "High",
+    "bands": { "Low": "0–25", "Medium": "26–50", "High": "51–75", "Critical": "76–100" }
+  },
+  "threat_intelligence": {
+    "ip_address": "203.0.113.42",
+    "abuseipdb": { ... },
+    "virustotal": { ... },
+    "aggregate_confidence": 78.4,
+    "threat_verdict": "Malicious"
+  }
+}
 ```
 
-### 4. Configure environment variables
+---
 
-```bash
-cp .env.example .env
-# Edit .env and fill in your values
+## Input Validation
+
+| Field      | Rule                                                                 |
+|------------|----------------------------------------------------------------------|
+| source_ip  | Valid **IPv4** address only (IPv6 and hostnames rejected → 422)      |
+| severity   | `Low` \| `Medium` \| `High` \| `Critical` (case-insensitive)        |
+| status     | `Open` \| `Investigating` \| `Resolved` (case-insensitive)          |
+| alert_type | 2-100 characters, required                                           |
+| description| Max 500 characters, optional                                         |
+
+---
+
+## Risk Scoring Logic
+
+The risk score is a weighted sum of four factors, clamped to **[0, 100]**:
+
+```
+risk_score = severity_pts + alert_type_pts + (ti_score × 20) + off_hours_pts
 ```
 
-### 5. Seed the database with sample data (optional)
+| Factor             | Weight    | Details                                                          |
+|--------------------|-----------|------------------------------------------------------------------|
+| Severity           | 0–40 pts  | Low=10, Medium=20, High=30, Critical=40                          |
+| Alert Type         | 0–30 pts  | Ransomware/Command Injection=30, Reconnaissance=8, etc.          |
+| Threat Intelligence| 0–20 pts  | TI aggregate confidence (0.0–1.0) × 20                          |
+| Off-Hours          | 0–10 pts  | +10 pts if alert occurs between 00:00–06:00 UTC                 |
 
+### Risk Level Bands
+
+| Score Range | Risk Level |
+|-------------|------------|
+| 0 – 25      | 🟢 Low      |
+| 26 – 50     | 🟡 Medium   |
+| 51 – 75     | 🟠 High     |
+| 76 – 100    | 🔴 Critical |
+
+---
+
+## Threat Intelligence Service
+
+Mock implementations of real TI APIs (deterministic — same IP always returns same data):
+
+### `check_abuseipdb(ip: str) → dict`
+Returns: `ip_address`, `abuse_confidence_score` (0–100), `country_code`, `isp`, `total_reports`, `last_reported_at`, `usage_type`, ...
+
+### `check_virustotal(ip: str) → dict`
+Returns: `ip_address`, `malicious_count`, `suspicious_count`, `harmless_count`, `total_engines`, `reputation`, `tags`, `as_owner`, ...
+
+### `enrich_ip(ip: str) → dict`
+Runs both lookups and returns a combined report with:
+- `aggregate_confidence`: weighted average of both sources
+- `threat_verdict`: `Clean` | `Suspicious` | `Malicious`
+
+---
+
+## Alert Workflow
+
+```
+POST /alerts  →  [Open]  →  [Investigating]  →  [Resolved]
+                    ↑______________↑
+                  (re-open allowed at any step)
+```
+
+---
+
+## Sample Security Alerts (Day 2)
+
+| Alert Type           | Source IP       | Severity | Status        |
+|----------------------|-----------------|----------|---------------|
+| Brute Force          | 203.0.113.42    | High     | Open          |
+| Malware Detection    | 10.0.1.55       | Critical | Investigating |
+| Suspicious Login     | 185.220.101.9   | Medium   | Open          |
+| Port Scan            | 198.51.100.17   | Low      | Resolved      |
+| Credential Stuffing  | 45.33.32.156    | High     | Investigating |
+
+Seed the database:
 ```bash
 python -m tests.seed_data
 ```
 
-### 6. Start the development server
+---
 
+## Running the Application
+
+### 1. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Start the server
 ```bash
 uvicorn app.main:app --reload
 ```
 
-The API is now running at **http://127.0.0.1:8000**
-
-### 7. Explore the interactive API docs
-
-| Interface | URL |
-|---|---|
-| Swagger UI | http://127.0.0.1:8000/docs |
-| ReDoc | http://127.0.0.1:8000/redoc |
+### 3. View API documentation
+Open: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ---
 
-## 📡 API Endpoints
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/` | Health check |
-| `POST` | `/alerts/` | Ingest a new security alert |
-| `GET` | `/alerts/` | List alerts (with filters & pagination) |
-| `GET` | `/alerts/{id}` | Get a single alert by ID |
-
-### Example: Create an Alert
+## Running Tests
 
 ```bash
-curl -X POST http://127.0.0.1:8000/alerts/ \
-  -H "Content-Type: application/json" \
-  -d '{
-    "alert_type": "Brute Force",
-    "source_ip": "203.0.113.42",
-    "severity": "HIGH",
-    "description": "348 failed SSH login attempts in 60 seconds."
-  }'
-```
-
-### Example: Get alerts filtered by severity
-
-```bash
-curl "http://127.0.0.1:8000/alerts/?severity=CRITICAL&limit=10"
-```
-
----
-
-## 🧪 Running Tests
-
-```bash
+# From the backend/ directory
 pytest tests/ -v
 ```
 
----
-
-## 🔮 Future Scope
-
-| Day | Feature |
-|---|---|
-| **Day 2** | Alembic migrations · Alert update/delete endpoints |
-| **Day 3** | Threat intelligence enrichment (VirusTotal, AbuseIPDB) |
-| **Day 4** | Dynamic risk score calculator |
-| **Day 5** | Automated response playbook engine |
-| **Day 6** | SIEM integration (Splunk / Elastic) |
-| **Day 7** | Real-time WebSocket alerts dashboard |
-| **Week 2** | React.js frontend with live alert dashboard |
-| **Week 3** | ML-based anomaly detection |
-| **Week 4** | Docker containerization & CI/CD pipeline |
+### Test Coverage (Day 2)
+- ✅ Alert creation (all 5 required types)
+- ✅ Alert retrieval (GET by ID)
+- ✅ Alert listing (with filters & pagination)
+- ✅ Status update (PATCH + transition validation)
+- ✅ Invalid IPv4 → 422
+- ✅ IPv6 address → 422
+- ✅ Invalid severity → 422
+- ✅ Case-insensitive severity/status normalisation
+- ✅ Risk scoring boundary tests (Low/Medium/High/Critical bands)
+- ✅ Threat intelligence determinism and response structure
 
 ---
 
-## 👨‍💻 Author
+## Logging
 
-**Infotact Internship Program**  
-SOAR Incident Containment Engine – Day 1
+All mutating operations are logged with structured fields:
+
+```
+2026-06-22 12:00:00 | INFO     | soar | Alert created | alert_id=ALERT-A3F80001 type=Brute Force ip=203.0.113.42 severity=High risk_score=72.50 ti_verdict=Malicious
+2026-06-22 12:05:00 | INFO     | soar | Alert status updated | alert_id=ALERT-A3F80001 Open → Investigating
+```
 
 ---
 
-## 📄 License
+## Git Commit Message
 
-This project is licensed under the [MIT License](LICENSE).
+```
+feat: implement alert workflow validation and risk scoring system
+
+- Add alert_id, created_at, updated_at fields to Alert model
+- Enforce IPv4-only validation with descriptive error messages
+- Add case-insensitive severity (Low/Medium/High/Critical) validation
+- Create risk_scoring.py with weighted 0-100 scoring engine
+- Create threat_intelligence.py with mock AbuseIPDB + VirusTotal
+- Add PATCH /alerts/{id}/status endpoint (Open|Investigating|Resolved)
+- Add GET /alerts/{id}/enrich endpoint for TI + risk enrichment
+- Wire TI enrichment and risk scoring into alert creation pipeline
+- Seed database with 10 realistic sample security alerts
+- Expand test suite to 50+ tests across 8 test classes
+```
