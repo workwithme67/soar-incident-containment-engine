@@ -124,7 +124,7 @@ def calculate_risk_score(
 
     logger.info(
         "Risk score computed | alert_type=%s severity=%s ti_score=%.2f "
-        "off_hours=%s → score=%.2f",
+        "off_hours=%s -> score=%.2f",
         alert_type, severity, ti_score, is_off_hours, clamped,
     )
     return clamped

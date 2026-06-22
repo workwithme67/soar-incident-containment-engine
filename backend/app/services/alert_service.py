@@ -202,7 +202,7 @@ def update_alert_status(
     db.refresh(alert)
 
     logger.info(
-        "Alert status updated | alert_id=%s %s → %s",
+        "Alert status updated | alert_id=%s %s -> %s",
         alert.alert_id,
         old_status,
         alert.status,
