@@ -664,3 +664,7 @@ backend/
 
 *SOAR Incident Containment Engine — Infotact Internship Project*
 *Backend 50% Milestone Complete*
+
+
+
+**By: Jigyasu Labana**
